@@ -64,6 +64,9 @@ ofstream output_means;
 ofstream output_green2;
 ofstream output_green4;
 
+/* Simulation flag */
+
+int sim_flag;
 
 /////////////////////////
 /* Declaring functions */
@@ -83,6 +86,7 @@ double Green4(double * array, int len_array, int dist);
 ////////////////////////////
 /*Declare output variables*/
 ////////////////////////////
+
 double mean;
 double mean2;
 double mean_delta2;
@@ -125,11 +129,17 @@ int main() {
     }
 
 
-    /* Ask the user what simulation they want to run */
+    /* temp */
+    eta = (double)(200.0/(double)(N));
+    delta_metro = sqrt(eta);
+
+    /* Ask the user what type of simulation they want to run */
     cout << "This program simulates a harmonic oscillator.\n";
     cout << "Since it is very resource intensive, you will need to select which type of quantities you need.\n";
-    cout << "Enter (1) to run a simulation that calculates energy and wave function of the ground state.\n";
+    cout << "Enter (0) to run a simulation that calculates the energy of the system at a given temperature.\n";
+    cout << "Enter (1) to run a simulation that calculates the energy and wave function of the ground state (remember to run this at low temperature).\n";
     cout << "Enter (2) to run a simulation that calculates the value of the first two energy gaps.\n";
+    cin >> sim_flag;
 
 
     /* Initialize seed for RNG */
@@ -157,7 +167,7 @@ int main() {
 
 
     /* Initialize lattice */
-    input_lattice.open("/home/exterior/Documents/Physics/MetodiNumerici/Modulo1/_data/lattice.txt", ios::in);
+    input_lattice.open("/home/exterior/Documents/Physics/MetodiNumerici/Modulo3/_data/input/lattice.txt", ios::in);
     if(input_lattice.is_open()){ // Check if file is open, then run
         LatticeInit(y, init_flag, seed);
         input_lattice.close();
@@ -165,6 +175,7 @@ int main() {
     else { // Error message
         cerr << "Unable to open Lattice file.\n";
     }
+    input_lattice.close();
 
 
     /* Open output files */
@@ -177,36 +188,92 @@ int main() {
     if(output_means.is_open() && output_green2.is_open() && output_green4.is_open()){
 
 
-        /* Start Markov chain and take a measurement for each iteration */
-        for(int l=0;l<measures;l++){
+        if(sim_flag==0){
 
 
-            /* Call Metropolis function decorrel_len times before taking a measurement*/
-            for(int r=0;r<decorrel_len;r++){
-                Metropolis(y,seed,delta_metro);
+            /* Start Markov chain and take a measurement for each iteration */
+            for(int l=0;l<measures;l++){
+
+
+                /* Call Metropolis function decorrel_len times before taking a measurement*/
+                for(int r=0;r<decorrel_len;r++){
+                    Metropolis(y,seed,delta_metro);
+                }
+
+
+                /* Computing output variables */
+                mean = MeanValue(y,N);
+                mean2 = Mean2(y,N);
+                mean_delta2 = MeanDiff2(y,N);
+
+
+                /* Writing array onto output files */
+                output_means << mean << "\t" << mean2 << "\t" << mean_delta2 << "\n";
+
             }
+        }
 
 
-            /* Computing output variables */
-            mean = MeanValue(y,N);
-            mean2 = Mean2(y,N);
-            mean_delta2 = MeanDiff2(y,N);
+        if(sim_flag==1){
 
-            for(int k=0;k<N/2;k++){
-                green2[k] = Green2(y,N,k+1);
-                green4[k] = Green4(y,N,k+1);
+
+            /* Start Markov chain and take a measurement for each iteration */
+            for(int l=0;l<measures;l++){
+
+
+                /* Call Metropolis function decorrel_len times before taking a measurement*/
+                for(int r=0;r<decorrel_len;r++){
+                    Metropolis(y,seed,delta_metro);
+                }
+
+
+                /* Computing output variables */
+                mean = MeanValue(y,N);
+                mean2 = Mean2(y,N);
+                mean_delta2 = MeanDiff2(y,N);
+
+
+                /* Writing array onto output files */
+                output_means << mean << "\t" << mean2 << "\t" << mean_delta2 << "\n";
+
             }
+        }
 
 
-            /* Writing array onto output files */
-            output_means << mean << "\t" << mean2 << "\t" << mean_delta2 << "\n";
+        if(sim_flag==2){
 
-            for(int k=0;k<N/2;k++){
-                output_green2 << green2[k] << "\t";
-                output_green4 << green4[k] << "\t";
+
+            /* Start Markov chain and take a measurement for each iteration */
+            for(int l=0;l<measures;l++){
+
+
+                /* Call Metropolis function decorrel_len times before taking a measurement*/
+                for(int r=0;r<decorrel_len;r++){
+                    Metropolis(y,seed,delta_metro);
+                }
+
+
+                /* Computing output variables */
+                mean = MeanValue(y,N);
+                mean2 = Mean2(y,N);
+
+                for(int k=0;k<N/2;k++){
+                    green2[k] = Green2(y,N,k+1);
+                    green4[k] = Green4(y,N,k+1);
+                }
+
+
+                /* Writing array onto output files */
+                output_means << mean << "\t" << mean2 << "\n";
+
+
+                for(int k=0;k<N/2;k++){
+                    output_green2 << green2[k] << "\t";
+                    output_green4 << green4[k] << "\t";
+                }
+                output_green2 << "\n";
+                output_green4 << "\n";
             }
-            output_green2 << "\n";
-            output_green4 << "\n";
         }
 
 
