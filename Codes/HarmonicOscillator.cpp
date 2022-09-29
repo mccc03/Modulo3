@@ -61,6 +61,7 @@ ifstream input_Parameters;
 ifstream input_lattice;
 ofstream output_lattice;
 ofstream output_means;
+ofstream output_y;
 ofstream output_green2;
 ofstream output_green4;
 
@@ -130,7 +131,7 @@ int main() {
 
 
     /* temp */
-    eta = (double)(200.0/(double)(N));
+    eta = (double)(40.0/(double)(N));
     delta_metro = sqrt(eta);
 
     /* Ask the user what type of simulation they want to run */
@@ -178,18 +179,13 @@ int main() {
     input_lattice.close();
 
 
-    /* Open output files */
-    output_means.open("/home/exterior/Documents/Physics/MetodiNumerici/Modulo3/_data/means.txt", ios::trunc);
-    output_green2.open("/home/exterior/Documents/Physics/MetodiNumerici/Modulo3/_data/green2.txt", ios::trunc);
-    output_green4.open("/home/exterior/Documents/Physics/MetodiNumerici/Modulo3/_data/green4.txt", ios::trunc);
+    /* Check simulation flag and whether output files are open then run algorithm */
+ 
+    if(sim_flag==0){
 
-
-    /* Check if output files are open then run algorithm */
-    if(output_means.is_open() && output_green2.is_open() && output_green4.is_open()){
-
-
-        if(sim_flag==0){
-
+        output_means.open("/home/exterior/Documents/Physics/MetodiNumerici/Modulo3/_data/means.txt", ios::trunc);
+    
+        if(output_means.is_open()){
 
             /* Start Markov chain and take a measurement for each iteration */
             for(int l=0;l<measures;l++){
@@ -211,10 +207,23 @@ int main() {
                 output_means << mean << "\t" << mean2 << "\t" << mean_delta2 << "\n";
 
             }
+
+            output_means.close();
+
         }
 
+        else{// print error message
+            cerr << "Unable to open output files.\n";
+        }
+        
+    }
 
-        if(sim_flag==1){
+
+    if(sim_flag==1){
+        
+        output_y.open("/home/exterior/Documents/Physics/MetodiNumerici/Modulo3/_data/position.txt", ios::trunc);
+
+        if(output_y.is_open()){
 
 
             /* Start Markov chain and take a measurement for each iteration */
@@ -227,21 +236,32 @@ int main() {
                 }
 
 
-                /* Computing output variables */
-                mean = MeanValue(y,N);
-                mean2 = Mean2(y,N);
-                mean_delta2 = MeanDiff2(y,N);
-
-
                 /* Writing array onto output files */
-                output_means << mean << "\t" << mean2 << "\t" << mean_delta2 << "\n";
+                for(int s=0;s<N;s++){
+                    output_y << y[s] << "\n";
+                }
 
             }
+
+            /* Closing output files */
+            output_y.close();
+        
         }
 
+        else{// print error message
+            cerr << "Unable to open output file.\n";
+        }
+        
+    }
 
-        if(sim_flag==2){
 
+    if(sim_flag==2){
+
+        output_means.open("/home/exterior/Documents/Physics/MetodiNumerici/Modulo3/_data/means.txt", ios::trunc);
+        output_green2.open("/home/exterior/Documents/Physics/MetodiNumerici/Modulo3/_data/green2.txt", ios::trunc);
+        output_green4.open("/home/exterior/Documents/Physics/MetodiNumerici/Modulo3/_data/green4.txt", ios::trunc);
+
+        if(output_means.is_open() && output_green2.is_open() && output_green4.is_open()){
 
             /* Start Markov chain and take a measurement for each iteration */
             for(int l=0;l<measures;l++){
@@ -274,17 +294,18 @@ int main() {
                 output_green2 << "\n";
                 output_green4 << "\n";
             }
+
+            /* Closing output files */
+            output_means.close();
+            output_green2.close();
+            output_green4.close();
+
+        }
+        
+        else{// print error message
+            cerr << "Unable to open output files.\n";
         }
 
-
-    /* Closing output files */
-    output_means.close();
-    output_green2.close();
-    output_green4.close();
-    }
-
-    else{// print error message
-        cerr << "Unable to open output files.\n";
     }
 
 
@@ -352,6 +373,7 @@ void LatticeInit(double * array, int flag, long int * seed){
         for(int k=0; k<N; k++){
             array[k] = 0.0;
         }
+        array[0]=array[N-1];
     }
 
     /* Initialize array whose elements are random, uniformly distributed inside standard deviation*/
@@ -359,6 +381,7 @@ void LatticeInit(double * array, int flag, long int * seed){
         for(int k=0; k<N; k++){
         array[k] =2*(Ran2(seed)-0.5)*sqrt(eta);
         }
+        array[0]=array[N-1];
     }
 
     /* Initialize array whose elements are read from the last iteration of the algorithm*/
@@ -377,6 +400,7 @@ void LatticeInit(double * array, int flag, long int * seed){
 /* The Metropolis function defines the Markov chain. */
 void Metropolis(double * array, long int * seed, double delta){
 
+    
     for(int i=0; i<(N); i++){
         // Using the results of Geometry to select the adjacent sites
         int ip = *(npp + i);
@@ -385,12 +409,12 @@ void Metropolis(double * array, long int * seed, double delta){
         /* This is where "physics" kicks in, we need to compute the action of the system and update the array based on that value*/
         double yp = array[i]+2*(Ran2(seed)-0.5)*delta;
 
-        double action_diff = ((double)(1.0/eta)+(double)(eta/2.0))*(yp*yp - array[i]*array[i])-(array[ip]+array[im])*(double)((array[i]-yp)/eta);
-
+        double action_diff = ((double)(1.0/eta)+(double)(eta/2.0))*(yp*yp - array[i]*array[i]) + (array[ip]+array[im])*(double)((array[i]-yp)/eta);
         // Last thing we need is the Metropolis test
-        double u = log(Ran2(seed));
+        double u = Ran2(seed);
+        double p = (double)(exp(-action_diff));
 
-        if(u<-action_diff){
+        if(u<p){
             array[i]=yp;
         }
     }

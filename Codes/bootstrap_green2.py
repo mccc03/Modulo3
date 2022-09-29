@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 
 directory = '/home/exterior/Documents/Physics/MetodiNumerici/Modulo3/_data/'
 input_parameters=open(directory+'input/parameters.txt',"r")
-output_green2=open(directory+'output/green2bootstrap.txt',"r")
+output_green2=open(directory+'output/green2bootstrap.txt',"w")
 
 
 ## Read input parameters
@@ -32,12 +32,6 @@ rng = np.random.default_rng()
 
 ## Define functions
 
-def Energy(x,y):
-    return 1.0/(2*eta) - x/(2*eta*eta) + y/2.0
-
-def FitExp(x,A,l):
-    return A*np.exp(-x/l)
-
 def BootstrapDev(observable,array,resamplings):
     dev_list = []
     len_array = len(array)
@@ -58,45 +52,17 @@ def BootstrapDev(observable,array,resamplings):
 
 ## Load data from simulation
 
-y, y2, delta_y2 = np.loadtxt(directory+'means.txt', unpack=True, skiprows=thermal_len)
+y, y2 = np.loadtxt(directory+'means.txt', unpack=True, skiprows=thermal_len)
 green2_data=np.loadtxt(directory+'green2.txt', unpack=True, skiprows=thermal_len)
-#green4=np.loadtxt(directory+'green4.txt', unpack=True, skiprows=thermal_len)
 
-green2=[]
-dev_green2=[]
 
 mean = np.mean(y)
 dev_mean = BootstrapDev(np.mean,y,resamplings)
 
 for k in range(len(green2_data)):
-    tmp_green = abs(np.mean(green2_data[k]) - mean)
-    green2.append(tmp_green)
+    tmp_green = np.mean(green2_data[k]) - mean
     dev_tmp = BootstrapDev(np.mean,green2_data[k],resamplings)
     tmp_dev_green=np.sqrt(dev_tmp*dev_tmp+4*mean*mean*dev_mean*dev_mean)
-    dev_green2.append(tmp_dev_green)
-    output_green2.write(str(N)+'\t'+str(tmp_green)+'\t'+str(tmp_dev_green)+'\n')
+    output_green2.write(str(tmp_green)+'\t'+str(tmp_dev_green)+'\n')
 
 output_green2.close()
-
-#ene = Energy(mean_delta2,mean2)
-
-x_fit = np.linspace(1.0, float(N/2), int(N/2))
-x = np.linspace(1.0, float(N/2), 100)
-
-popt, pcov = curve_fit(FitExp, x_fit, green2, sigma=dev_green2)
-chisq = (((green2 - FitExp(x_fit, *popt)) / dev_green2)**2).sum()
-
-print(f'A = {popt[0]:.4f} +/- {np.sqrt(pcov[0, 0]):.4f}')
-print(f'l = {popt[1]:.4f} +/- {np.sqrt(pcov[1, 1]):.4f}')
-print(f'cov = {np.sqrt(pcov[1, 0]):.4f}')
-
-plt.figure(1)
-
-plt.title('Fit for first energy gap')
-plt.ylabel('2 point connected Green function')
-plt.xlabel('Distance')
-plt.grid(color = 'gray')
-plt.errorbar(x_fit,green2,yerr=dev_green2, color='green',fmt='.')
-plt.plot(x,FitExp(x,popt[0],popt[1]), color='blue')
-
-plt.show()
