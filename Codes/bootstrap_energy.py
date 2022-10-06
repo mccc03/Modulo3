@@ -16,16 +16,16 @@ input_parameters=open(directory+'input/parameters.txt',"r")
 
 input_par_list = input_parameters.readlines()
 
-thermal_len = int(input_par_list[4])
-resamplings = int(input_par_list[7])
-N = int(input_par_list[1])
+thermal_len = int(input_par_list[5])
+resamplings = int(input_par_list[8])
+N = int(input_par_list[2])
 
 input_parameters.close()
 
 
 ## Set output files
 
-output_energy=open(directory+'output/energy20.txt', "a")
+output_energy=open(directory+'output/energy_temp.txt', "a")
 
 
 ## Initialize RNG
@@ -64,6 +64,10 @@ dev_mean2 = BootstrapDev(np.mean,y2,resamplings)
 mean_delta2 = np.mean(delta_y2)
 dev_mean_delta2 = BootstrapDev(np.mean,delta_y2,resamplings)
 
-output_energy.write(str(N)+'\t'+str(mean)+'\t'+str(dev_mean)+'\t'+str(mean2)+'\t'+str(dev_mean2)+'\t'+str(mean_delta2)+'\t'+str(dev_mean_delta2)+'\n')
+## tmp
+
+T = float(10.0/float(N))
+
+output_energy.write(str(T)+'\t'+str(mean)+'\t'+str(dev_mean)+'\t'+str(mean2)+'\t'+str(dev_mean2)+'\t'+str(mean_delta2)+'\t'+str(dev_mean_delta2)+'\n')
 
 output_energy.close()

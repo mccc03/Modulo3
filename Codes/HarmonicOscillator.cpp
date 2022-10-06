@@ -39,6 +39,7 @@ double * y;
 /* Declaring simulation parameters */
 /////////////////////////////////////
 
+double T;
 int N; // Discretization steps
 double eta; // Lattice step in units of 1/omega, omega is the oscillator frequency
 int init_flag; // Starting state of the matrix, either hot (1), cold (0) or previous final state
@@ -76,7 +77,7 @@ int sim_flag;
 float Ran2(long *idum); // Random number generator
 void Geometry(int * movePlus, int * moveMinus, int d); // Generates proximity arrays
 void LatticeInit(double * array, int flag, long int * seed); // Initializes array in a state defined by iflag
-void Metropolis(double * array, long int * seed, double delta); // Generates Markov chain
+void Metropolis(double * array, long int * seed, double delta, int deco); // Generates Markov chain
 double MeanValue(double * array, int len_array);
 double Mean2(double * array, int len_array);
 double MeanDiff2(double * array, int len_array);
@@ -109,6 +110,8 @@ int main() {
         string line;
         string::size_type sz;
         getline(input_Parameters, line);
+        T = stod(line,&sz);
+        getline(input_Parameters, line);
         measures = stoi(line,&sz);
         getline(input_Parameters, line);
         N = stoi(line,&sz);
@@ -131,7 +134,7 @@ int main() {
 
 
     /* temp */
-    eta = (double)(40.0/(double)(N));
+    eta = (double)(T/(double)(N));
     delta_metro = sqrt(eta);
 
     /* Ask the user what type of simulation they want to run */
@@ -192,9 +195,9 @@ int main() {
 
 
                 /* Call Metropolis function decorrel_len times before taking a measurement*/
-                for(int r=0;r<decorrel_len;r++){
-                    Metropolis(y,seed,delta_metro);
-                }
+
+                Metropolis(y,seed,delta_metro,decorrel_len);
+
 
 
                 /* Computing output variables */
@@ -231,9 +234,7 @@ int main() {
 
 
                 /* Call Metropolis function decorrel_len times before taking a measurement*/
-                for(int r=0;r<decorrel_len;r++){
-                    Metropolis(y,seed,delta_metro);
-                }
+                Metropolis(y,seed,delta_metro,decorrel_len);
 
 
                 /* Writing array onto output files */
@@ -268,9 +269,8 @@ int main() {
 
 
                 /* Call Metropolis function decorrel_len times before taking a measurement*/
-                for(int r=0;r<decorrel_len;r++){
-                    Metropolis(y,seed,delta_metro);
-                }
+                Metropolis(y,seed,delta_metro,decorrel_len);
+
 
 
                 /* Computing output variables */
@@ -398,27 +398,27 @@ void LatticeInit(double * array, int flag, long int * seed){
 }
 
 /* The Metropolis function defines the Markov chain. */
-void Metropolis(double * array, long int * seed, double delta){
+void Metropolis(double * array, long int * seed, double delta, int deco){
 
-    
-    for(int i=0; i<(N); i++){
-        // Using the results of Geometry to select the adjacent sites
-        int ip = *(npp + i);
-        int im = *(nmm + i);
+    for(int r=0;r<deco;r++){
+        for(int i=0; i<(N); i++){
+            // Using the results of Geometry to select the adjacent sites
+            int ip = *(npp + i);
+            int im = *(nmm + i);
 
-        /* This is where "physics" kicks in, we need to compute the action of the system and update the array based on that value*/
-        double yp = array[i]+2*(Ran2(seed)-0.5)*delta;
+            /* This is where "physics" kicks in, we need to compute the action of the system and update the array based on that value*/
+            double yp = array[i]+2*(Ran2(seed)-0.5)*delta;
 
-        double action_diff = ((double)(1.0/eta)+(double)(eta/2.0))*(yp*yp - array[i]*array[i]) + (array[ip]+array[im])*(double)((array[i]-yp)/eta);
-        // Last thing we need is the Metropolis test
-        double u = Ran2(seed);
-        double p = (double)(exp(-action_diff));
+            double action_diff = ((double)(1.0/eta)+(double)(eta/2.0))*(yp*yp - array[i]*array[i]) + (array[ip]+array[im])*(double)((array[i]-yp)/eta);
+            // Last thing we need is the Metropolis test
+            double u = Ran2(seed);
+            double p = (double)(exp(-action_diff));
 
-        if(u<p){
-            array[i]=yp;
+            if(u<p){
+                array[i]=yp;
+            }
         }
     }
-
   return;
 }
 
