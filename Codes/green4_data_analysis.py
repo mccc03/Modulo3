@@ -4,6 +4,7 @@ import string
 import numpy as np
 from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 
 
 ## I/O directory and files
@@ -35,9 +36,14 @@ N_list = [400,286,222,182,154,133,118,105,95,87,80,74,69,65,61,57]
 plt.figure(1)
 
 plt.title('Fit for correlation length')
-plt.ylabel(r'$\left\langle y_j y_{j+k}\right\rangle _c$')
+plt.ylabel(r'$\left\langle y_j ^2 y_{j+k} ^2\right\rangle _c$')
 plt.xlabel(r'$k$ [a]')
 plt.grid(color = 'gray')
+
+cmap=mpl.colormaps['turbo']
+colors = cmap(N_list)
+
+i = 0
 
 for N in N_list:
     ## Load data
@@ -71,8 +77,10 @@ for N in N_list:
 
     eta = T/float(N)
 
-    plt.errorbar(x_fit,green4,yerr=dev_green4,fmt='.',label='eta = '+str(eta))
-    plt.plot(x,FitExp(x,*popt),label='eta = '+str(eta))
+    plt.errorbar(x_fit,green4,yerr=dev_green4,fmt='.',label=rf'$\eta =${eta:.3f}',color=colors[i])
+    plt.plot(x,FitExp(x,*popt),color=colors[i])
+
+    i = i+1
 
 output_fit.close()
 
