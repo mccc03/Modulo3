@@ -18,8 +18,6 @@ output_fit.write('N\tA\tdA\t(E2-E0)\td(E2-E0)\tchi\n')
 
 input_par_list = input_parameters.readlines()
 
-thermal_len = int(input_par_list[5])
-resamplings = int(input_par_list[8])
 T = float(input_par_list[0])
 
 input_parameters.close()
@@ -36,9 +34,9 @@ N_list = [400,286,222,182,154,133,118,105,95,87,80,74,69,65,61,57]
 
 plt.figure(1)
 
-plt.title('Fit for first energy gap')
-plt.ylabel('gndsk')
-plt.xlabel('Distance [a]')
+plt.title('Fit for correlation length')
+plt.ylabel(r'$\left\langle y_j y_{j+k}\right\rangle _c$')
+plt.xlabel(r'$k$ [a]')
 plt.grid(color = 'gray')
 
 for N in N_list:
@@ -60,9 +58,10 @@ for N in N_list:
     chisq = chisq/ndof
 
     ## Compute energy gap and propagate error (in units of \hbar\omega)
+    eta = T/(float(N))
 
-    gap = 1/(eta*popt[1])
-    dev_gap = np.sqrt(pcov[1, 1])/(eta*popt[1]*popt[1])
+    gap = popt[1]/eta
+    dev_gap = np.sqrt(pcov[1, 1])/eta
 
     ## Write fit results onto output file
 
@@ -72,7 +71,7 @@ for N in N_list:
 
     eta = T/float(N)
 
-    plt.errorbar(x_fit,green2,yerr=dev_green2,fmt='.',label='eta = '+str(eta))
+    plt.errorbar(x_fit,green4,yerr=dev_green4,fmt='.',label='eta = '+str(eta))
     plt.plot(x,FitExp(x,*popt),label='eta = '+str(eta))
 
 output_fit.close()

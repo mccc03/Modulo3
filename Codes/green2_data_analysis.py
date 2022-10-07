@@ -58,9 +58,10 @@ for N in N_list:
     chisq = chisq/ndof
 
     ## Compute energy gap and propagate error
+    eta = T/(float(N))
 
-    gap = 1/(eta*popt[1])
-    dev_gap = np.sqrt(pcov[1, 1])/(eta*popt[1]*popt[1])
+    gap = popt[1]/eta
+    dev_gap = np.sqrt(pcov[1, 1])/eta
 
     ## Write fit results onto output file
 
