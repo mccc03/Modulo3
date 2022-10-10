@@ -20,7 +20,7 @@ directory = '/home/exterior/Documents/Physics/MetodiNumerici/Modulo3/_data/outpu
 
 ## Read data
 
-T,y,dy,y2,dy2,Dy2,dDy2 = np.loadtxt(directory+'energy_temp.txt', unpack=True)
+temperature,y,dy,y2,dy2,Dy2,dDy2 = np.loadtxt(directory+'energy_temp.txt', unpack=True)
 
 ## Compute energy and error
 
@@ -29,10 +29,10 @@ dev_ene = 50.0*dDy2
 
 ## Start fit
 initial=(0.5,1.0)
-popt, pcov = curve_fit(FitEne, T, ene, sigma=dev_ene,absolute_sigma=False,p0=initial)
-chisq = (((ene - FitEne(T, *popt)) / dev_ene)**2).sum()
+popt, pcov = curve_fit(FitEne, temperature, ene, sigma=dev_ene,absolute_sigma=False,p0=initial)
+chisq = (((ene - FitEne(temperature, *popt)) / dev_ene)**2).sum()
 
-ndof = len(T)-len(popt)
+ndof = len(temperature)-len(popt)
 
 print(f'a = {popt[0]:.4f} +/- {np.sqrt(pcov[0, 0]):.4f}')
 print(f'b = {popt[1]:.4f} +/- {np.sqrt(pcov[1, 1]):.4f}')
@@ -43,8 +43,8 @@ plt.title('Energy as a function of temperature')
 plt.xlabel(r'$T = 1/(N\eta)$')
 plt.ylabel('Energy')
 plt.grid(color = 'gray')
-plt.errorbar(T,ene,yerr=dev_ene, color='green',fmt='.')
-plt.plot(T,FitEne(T,*popt), color='blue')
+plt.errorbar(temperature,ene,yerr=dev_ene, color='green',fmt='.')
+plt.plot(temperature,FitEne(temperature,*popt), color='blue')
 
 plt.show()
 

@@ -44,7 +44,7 @@ plt.ylabel(r'$\left\langle y_j y_{j+k}\right\rangle _c$')
 plt.xlabel('$k$ [a]')
 plt.grid(color = 'gray',alpha=0.4)
 
-#colors = plt.cm.jet(np.linspace(0, 1, len(N_list)))
+
 cmap=mpl.colormaps['turbo']
 colors = cmap(N_list)
 

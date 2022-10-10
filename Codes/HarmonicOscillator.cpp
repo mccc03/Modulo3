@@ -47,6 +47,8 @@ int measures; // Number of measures
 int decorrel_len; // Decorrelation length
 int thermal_len; // Number of measures to be discarded
 double delta_metro; // Maximum variation during Metropolis function
+int bins; // Number of bins in histogram
+double y_max; // Defines range for gaussian fit
 
 /* Pointers to the adjacent sites */
 int * npp;
@@ -62,7 +64,7 @@ ifstream input_Parameters;
 ifstream input_lattice;
 ofstream output_lattice;
 ofstream output_means;
-ofstream output_y;
+ofstream output_probs;
 ofstream output_green2;
 ofstream output_green4;
 
@@ -83,6 +85,7 @@ double Mean2(double * array, int len_array);
 double MeanDiff2(double * array, int len_array);
 double Green2(double * array, int len_array, int dist);
 double Green4(double * array, int len_array, int dist);
+void Hist(double * array_in, double * array_out, int len_array, int bin);
 
 
 ////////////////////////////
@@ -94,6 +97,7 @@ double mean2;
 double mean_delta2;
 double * green2;
 double * green4;
+double * probs;
 
 
 //////////////////
@@ -109,22 +113,25 @@ int main() {
 
         string line;
         string::size_type sz;
+
         getline(input_Parameters, line);
-        T = stod(line,&sz);
+        T = stod(line,&sz); // T is actually the inverse temperature, we called it T for simplicity
         getline(input_Parameters, line);
         measures = stoi(line,&sz);
         getline(input_Parameters, line);
         N = stoi(line,&sz);
         getline(input_Parameters, line);
-        eta = stod(line,&sz);
-        getline(input_Parameters, line);
         decorrel_len = stoi(line,&sz);
         getline(input_Parameters, line);
         thermal_len = stoi(line,&sz);
         getline(input_Parameters, line);
-        delta_metro = stod(line,&sz);
-        getline(input_Parameters, line);
         init_flag = stoi(line,&sz);
+        getline(input_Parameters, line);
+        getline(input_Parameters, line);
+        bins = stoi(line,&sz);
+        getline(input_Parameters, line);
+        y_max = stod(line,&sz);
+
         input_Parameters.close();
 
     }
@@ -133,7 +140,7 @@ int main() {
     }
 
 
-    /* temp */
+    /* Derive eta and delta_metro from inverse temperature and N. eta is the lattice step in units of 1/omega*/
     eta = (double)(T/(double)(N));
     delta_metro = sqrt(eta);
 
@@ -141,7 +148,7 @@ int main() {
     cout << "This program simulates a harmonic oscillator.\n";
     cout << "Since it is very resource intensive, you will need to select which type of quantities you need.\n";
     cout << "Enter (0) to run a simulation that calculates the energy of the system at a given temperature.\n";
-    cout << "Enter (1) to run a simulation that calculates the energy and wave function of the ground state (remember to run this at low temperature).\n";
+    cout << "Enter (1) to run a simulation that calculates the wave function of the ground state (remember to run this at low temperature).\n";
     cout << "Enter (2) to run a simulation that calculates the value of the first two energy gaps.\n";
     cin >> sim_flag;
 
@@ -168,6 +175,9 @@ int main() {
     /* Allocating space for arrays of the connected Green functions */
     green2 = new double[N/2];
     green4 = new double[N/2];
+
+    /* Allocating space for probability function */
+    probs = new double[bins];
 
 
     /* Initialize lattice */
@@ -199,7 +209,6 @@ int main() {
                 Metropolis(y,seed,delta_metro,decorrel_len);
 
 
-
                 /* Computing output variables */
                 mean = MeanValue(y,N);
                 mean2 = Mean2(y,N);
@@ -224,9 +233,10 @@ int main() {
 
     if(sim_flag==1){
         
-        output_y.open("/home/exterior/Documents/Physics/MetodiNumerici/Modulo3/_data/position.txt", ios::trunc);
+        /* We store the number of times the oscillator visits an interval in this file, each row represents a measure and each column an interval */
+        output_probs.open("/home/exterior/Documents/Physics/MetodiNumerici/Modulo3/_data/probs.txt", ios::trunc);
 
-        if(output_y.is_open()){
+        if(output_probs.is_open()){
 
 
             /* Start Markov chain and take a measurement for each iteration */
@@ -236,16 +246,19 @@ int main() {
                 /* Call Metropolis function decorrel_len times before taking a measurement*/
                 Metropolis(y,seed,delta_metro,decorrel_len);
 
+                /* Call Hist funtion to generate probability data */
+                Hist(y, probs, N, bins);
 
                 /* Writing array onto output files */
-                for(int s=0;s<N;s++){
-                    output_y << y[s] << "\n";
+                for(int s=0;s<bins;s++){
+                    output_probs << probs[s] << "\t";
                 }
+                output_probs << "\n";
 
             }
 
             /* Closing output files */
-            output_y.close();
+            output_probs.close();
         
         }
 
@@ -313,6 +326,7 @@ int main() {
     delete[] y;
     delete[] green2;
     delete[] green4;
+    delete[] probs;
 
     return 0;
 }
@@ -422,6 +436,28 @@ void Metropolis(double * array, long int * seed, double delta, int deco){
   return;
 }
 
+/* The Hist function is basically a binning function used to collect the data needed to fit the ground state of the oscillator. The range is selected by the user and read from parameters.txt */
+void Hist(double * array_in, double * array_out, int len_array, int bin){
+
+    double array_in_min = -y_max;
+    double array_in_max = y_max;
+
+    double range = array_in_max - array_in_min;
+    double step = (double)(range/(double)(bin));
+
+    for(int i = 0; i < bin; i++){
+        array_out[i] = 0.0;
+        for(int j = 0; j < len_array; j++){
+            if(array_in[j] >= array_in_min + i*step && array_in[j] < array_in_min + (i+1)*step){
+                array_out[i] = array_out[i] + 1.0; // Function normalized during data analysis
+            }
+        }
+    }
+
+    return;
+
+}
+
 /* Computes mean value of an array */
 double MeanValue(double * array, int len_array){
     double sum = 0.0;
@@ -469,4 +505,3 @@ double Green4(double * array, int len_array, int dist){
     }
     return (double)(sum/(double(len_array)));
 }
-

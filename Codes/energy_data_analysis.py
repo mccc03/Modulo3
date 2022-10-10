@@ -21,14 +21,25 @@ def Parabola(x,a,b):
 ## Set working directory
 
 directory = '/home/exterior/Documents/Physics/MetodiNumerici/Modulo3/_data/output/'
+input_parameters=open(directory+'input/parameters.txt',"r")
+
+
+## Read input parameters
+
+input_par_list = input_parameters.readlines()
+
+T = float(input_par_list[0])
+
+input_parameters.close()
+
 
 ## Read data
 
-N,y,dy,y2,dy2,Dy2,dDy2 = np.loadtxt(directory+'energy20.txt', unpack=True, skiprows=2)
+N,y,dy,y2,dy2,Dy2,dDy2 = np.loadtxt(directory+'output/energyT'+str(int(T))+'.txt', unpack=True, skiprows=2)
 
 ## Create eta variable
 
-eta=20.0/N
+eta=T/N
 
 ## Start fit
 
@@ -40,6 +51,9 @@ ndof = len(y2)-len(popt)
 print(f'a = {popt[0]:.4f} +/- {np.sqrt(pcov[0, 0]):.4f}')
 print(f'b = {popt[1]:.4f} +/- {np.sqrt(pcov[1, 1]):.4f}')
 print(f'norm chisq = {chisq/ndof}')
+
+
+## Plots
 
 x=np.linspace(0.0,0.5,100)
 

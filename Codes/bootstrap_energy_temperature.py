@@ -2,14 +2,13 @@
 
 import string
 import numpy as np
-from scipy.optimize import curve_fit
-import matplotlib.pyplot as plt
 
 
-## I/O directory and files
+## Set input directory and files
 
 directory = '/home/exterior/Documents/Physics/MetodiNumerici/Modulo3/_data/'
 input_parameters=open(directory+'input/parameters.txt',"r")
+
 
 ## Read input parameters
 
@@ -18,15 +17,13 @@ input_par_list = input_parameters.readlines()
 thermal_len = int(input_par_list[4])
 resamplings = int(input_par_list[6])
 N = int(input_par_list[2])
-T = float(input_par_list[0])
-
-eta = T/float(N)
 
 input_parameters.close()
 
 
-output_green2=open(directory+'green2bootstrap_N'+str(N)+'.txt',"w")
-output_green4=open(directory+'green4bootstrap_N'+str(N)+'.txt',"w")
+## Set output files
+
+output_energy=open(directory+'output/energy_temp.txt', "a")
 
 
 ## Initialize RNG
@@ -39,8 +36,9 @@ rng = np.random.default_rng()
 def BootstrapDev(observable,array,resamplings):
     dev_list = []
     len_array = len(array)
-    bin_size = int(len_array/256)
+    bin_size = int(len_array/128)
     while(bin_size <= 1+len_array/10):
+        print('%d'%(bin_size))
         observable_bs = []
         for _ in range(resamplings):
             array_res = []
@@ -55,30 +53,20 @@ def BootstrapDev(observable,array,resamplings):
 
 ## Load data from simulation
 
-y, y2 = np.loadtxt(directory+'means.txt', unpack=True, skiprows=thermal_len)
-green2_data=np.loadtxt(directory+'green2.txt', unpack=True, skiprows=thermal_len)
-green4_data=np.loadtxt(directory+'green4.txt', unpack=True, skiprows=thermal_len)
-
+y, y2, delta_y2 = np.loadtxt(directory+'means.txt', unpack=True, skiprows=thermal_len)
 
 mean = np.mean(y)
 dev_mean = BootstrapDev(np.mean,y,resamplings)
 mean2 = np.mean(y2)
 dev_mean2 = BootstrapDev(np.mean,y2,resamplings)
+mean_delta2 = np.mean(delta_y2)
+dev_mean_delta2 = BootstrapDev(np.mean,delta_y2,resamplings)
 
+## temperature = 1.0/(eta*N) = 10.0/N
+## eta = 0.1
 
-for k in range(len(green2_data)):
-    tmp_green = np.mean(green2_data[k]) - mean*mean
-    dev_tmp = BootstrapDev(np.mean,green2_data[k],resamplings)
-    tmp_dev_green=np.sqrt(dev_tmp*dev_tmp+4*mean*mean*dev_mean*dev_mean)
-    output_green2.write(str(tmp_green)+'\t'+str(tmp_dev_green)+'\n')
+temperature = float(10.0/float(N))
 
+output_energy.write(str(temperature)+'\t'+str(mean)+'\t'+str(dev_mean)+'\t'+str(mean2)+'\t'+str(dev_mean2)+'\t'+str(mean_delta2)+'\t'+str(dev_mean_delta2)+'\n')
 
-output_green2.close()
-
-for k in range(len(green4_data)):
-    tmp_green = np.mean(green4_data[k]) - mean2*mean2
-    dev_tmp = BootstrapDev(np.mean,green2_data[k],resamplings)
-    tmp_dev_green=np.sqrt(dev_tmp*dev_tmp+4*mean2*mean2*dev_mean2*dev_mean2)
-    output_green4.write(str(tmp_green)+'\t'+str(tmp_dev_green)+'\n')
-
-output_green4.close()
+output_energy.close()

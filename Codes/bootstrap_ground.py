@@ -9,37 +9,30 @@ import numpy as np
 directory = '/home/exterior/Documents/Physics/MetodiNumerici/Modulo3/_data/'
 input_parameters=open(directory+'input/parameters.txt',"r")
 
-
 ## Read input parameters
 
 input_par_list = input_parameters.readlines()
 
-T = float(input_par_list[0])
 thermal_len = int(input_par_list[4])
 resamplings = int(input_par_list[6])
-N = int(input_par_list[2])
 
 input_parameters.close()
 
-
 ## Set output files
 
-output_energy=open(directory+'output/energyT'+str(int(T))+'.txt', "a")
-
+output_ground=open(directory+'output/ground_bootstrap.txt', "w")
 
 ## Initialize RNG
 
 rng = np.random.default_rng()
-
 
 ## Define functions
 
 def BootstrapDev(observable,array,resamplings):
     dev_list = []
     len_array = len(array)
-    bin_size = int(len_array/128)
+    bin_size = int(len_array/(1024))
     while(bin_size <= 1+len_array/10):
-        print('%d'%(bin_size))
         observable_bs = []
         for _ in range(resamplings):
             array_res = []
@@ -51,19 +44,14 @@ def BootstrapDev(observable,array,resamplings):
         bin_size*=2
     return max(dev_list)
 
-
 ## Load data from simulation
 
-y, y2, delta_y2 = np.loadtxt(directory+'means.txt', unpack=True, skiprows=thermal_len)
+prob_data = np.loadtxt(directory+'probs.txt', unpack=True, skiprows=thermal_len)
 
-mean = np.mean(y)
-dev_mean = BootstrapDev(np.mean,y,resamplings)
-mean2 = np.mean(y2)
-dev_mean2 = BootstrapDev(np.mean,y2,resamplings)
-mean_delta2 = np.mean(delta_y2)
-dev_mean_delta2 = BootstrapDev(np.mean,delta_y2,resamplings)
+## Call bootstrap for each bin
 
+for k in range(len(prob_data)):
+    tmp_prob = np.mean(prob_data[k])
+    tmp_dev = BootstrapDev(np.mean,prob_data[k],resamplings)
+    output_ground.write(str(tmp_prob)+'\t'+str(tmp_dev)+'\n')
 
-output_energy.write(str(N)+'\t'+str(mean)+'\t'+str(dev_mean)+'\t'+str(mean2)+'\t'+str(dev_mean2)+'\t'+str(mean_delta2)+'\t'+str(dev_mean_delta2)+'\n')
-
-output_energy.close()
